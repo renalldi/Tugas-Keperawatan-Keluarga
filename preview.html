@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GastroCare Smart</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{font-family:Segoe UI,sans-serif;margin:0;background:#f4f7fb}
+.header{background:#0f766e;color:white;padding:20px;text-align:center}
+.container{max-width:1100px;margin:auto;padding:20px}
+.card{background:white;padding:20px;border-radius:16px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+input,select,textarea{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px}
+button{background:#0f766e;color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.stat{background:#ecfeff;padding:15px;border-radius:12px}
+#app{display:none}
+</style>
+</head>
+<body>
+<div class="header"><h1>🩺 GastroCare Smart</h1><p>Prototype Inovasi Monitoring Gastritis</p></div>
+
+<div class="container">
+<div id="loginCard" class="card">
+<h2>Login Pasien</h2>
+<input id="nama" placeholder="Nama Pasien">
+<input id="umur" type="number" placeholder="Umur">
+<select id="jk"><option>Laki-laki</option><option>Perempuan</option></select>
+<button onclick="login()">Masuk Dashboard</button>
+</div>
+
+<div id="app">
+<div class="card">
+<h2>Dashboard</h2>
+<div class="grid">
+<div class="stat"><b>Pasien</b><div id="pNama"></div></div>
+<div class="stat"><b>Umur</b><div id="pUmur"></div></div>
+<div class="stat"><b>Status Risiko</b><div id="risiko">Belum dinilai</div></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Skrining Risiko Gastritis</h2>
+<label><input type="checkbox" class="risk"> Telat makan</label><br>
+<label><input type="checkbox" class="risk"> Nyeri ulu hati</label><br>
+<label><input type="checkbox" class="risk"> Mual</label><br>
+<label><input type="checkbox" class="risk"> Kopi berlebihan</label><br>
+<label><input type="checkbox" class="risk"> Makanan pedas</label><br>
+<button onclick="hitungRisiko()">Hitung Risiko</button>
+</div>
+
+<div class="card">
+<h2>Monitoring Harian</h2>
+<input id="nyeri" type="number" min="0" max="10" placeholder="Skala nyeri 0-10">
+<textarea id="keluhan" placeholder="Keluhan hari ini"></textarea>
+<button onclick="simpan()">Simpan Data</button>
+</div>
+
+<div class="card">
+<h2>Grafik Nyeri</h2>
+<canvas id="grafik"></canvas>
+</div>
+
+<div class="card">
+<h2>Food Checker</h2>
+<input id="food" placeholder="Contoh: kopi">
+<button onclick="cekFood()">Cek</button>
+<p id="foodRes"></p>
+</div>
+
+<div class="card">
+<h2>Edukasi Gastritis</h2>
+<ul>
+<li>Makan teratur.</li>
+<li>Kurangi kopi, pedas, dan asam.</li>
+<li>Kelola stres.</li>
+<li>Istirahat cukup.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>Laporan</h2>
+<button onclick="buatPDF()">Download PDF</button>
+</div>
+</div>
+</div>
+
+<script>
+let chart;
+function login(){
+ let n=nama.value,u=umur.value;
+ if(!n||!u)return alert("Lengkapi data");
+ loginCard.style.display="none";
+ app.style.display="block";
+ pNama.innerText=n;
+ pUmur.innerText=u+" tahun";
+ loadChart();
+}
+function hitungRisiko(){
+ let c=document.querySelectorAll('.risk:checked').length;
+ let r="Rendah";
+ if(c>=2) r="Sedang";
+ if(c>=4) r="Tinggi";
+ risiko.innerText=r;
+}
+function simpan(){
+ let data=JSON.parse(localStorage.getItem("gastro")||"[]");
+ data.push({tgl:new Date().toLocaleDateString(),nyeri:+nyeri.value||0});
+ localStorage.setItem("gastro",JSON.stringify(data));
+ loadChart();
+ alert("Data tersimpan");
+}
+function loadChart(){
+ let data=JSON.parse(localStorage.getItem("gastro")||"[]");
+ let labels=data.map(x=>x.tgl);
+ let values=data.map(x=>x.nyeri);
+ if(chart) chart.destroy();
+ chart=new Chart(document.getElementById("grafik"),{
+ type:"line",
+ data:{labels:labels,datasets:[{label:"Skala Nyeri",data:values}]}
+ });
+}
+function cekFood(){
+ let f=food.value.toLowerCase();
+ let aman=["pisang","oatmeal","roti"];
+ let hindari=["kopi","sambal","mie pedas"];
+ if(aman.includes(f)) foodRes.innerText="🟢 Aman";
+ else if(hindari.includes(f)) foodRes.innerText="🔴 Sebaiknya dihindari";
+ else foodRes.innerText="🟡 Konsumsi secukupnya";
+}
+async function buatPDF(){
+ const {jsPDF}=window.jspdf;
+ let pdf=new jsPDF();
+ pdf.text("Laporan GastroCare Smart",20,20);
+ pdf.text("Pasien: "+pNama.innerText,20,35);
+ pdf.text("Status Risiko: "+risiko.innerText,20,50);
+ pdf.save("Laporan_GastroCare.pdf");
+}
+</script>
+</body>
+</html>
